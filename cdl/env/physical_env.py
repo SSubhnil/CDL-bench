@@ -2,17 +2,17 @@
 
 import numpy as np
 
-import gym
+import gymnasium as gym
 from collections import OrderedDict
 from dataclasses import dataclass
-from gym.utils import seeding
+from gymnasium.utils import seeding
 
 import skimage
 import matplotlib
 import matplotlib.pyplot as plt
 
-from env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
-from env.drawing import render_cubes, get_colors_and_weights
+from cdl.env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
+from cdl.env.drawing import render_cubes, get_colors_and_weights
 
 
 @dataclass

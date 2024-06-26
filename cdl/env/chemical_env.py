@@ -5,19 +5,19 @@ import torch
 import torch.nn as nn
 import re
 
-import gym
+import gymnasium as gym
 from collections import OrderedDict
 from dataclasses import dataclass
-from gym.utils import seeding
+from gymnasium.utils import seeding
 
 import matplotlib as mpl
 
 import skimage
 import skimage.draw
 
-from env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
-from env.drawing import render_cubes, get_colors_and_weights
-from env.physical_env import Coord
+from cdl.env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
+from cdl.env.drawing import render_cubes, get_colors_and_weights
+from cdl.env.physical_env import Coord
 import random
 
 

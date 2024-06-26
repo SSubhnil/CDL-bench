@@ -2,11 +2,15 @@
 
 import numpy as np
 from multiprocessing import Process, Pipe
-
+from cdl.env.dmc import DMCWrapper
 
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
     env = env_fn_wrapper.x()
+
+    if isinstance(env, dict) and 'domain_name' in env and 'task_name' in env:
+        env = DMCWrapper(enc['domain_name'], env['task_name'])
+
     while True:
         cmd, data = remote.recv()
         if cmd == 'step':

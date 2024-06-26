@@ -8,8 +8,8 @@ import torch.optim as optim
 from torch.distributions.categorical import Categorical
 from torch.distributions.normal import Normal
 
-from utils.utils import to_numpy, preprocess_obs, postprocess_obs
-
+from cdl.utils.utils import to_numpy, preprocess_obs, postprocess_obs
+from cdl.env.dmc import DMCWrapper
 
 class ActionDistribution:
     def __init__(self, params):

@@ -8,16 +8,18 @@ import numpy as np
 
 from robosuite.controllers import load_controller_config
 from robosuite.utils.input_utils import *
-from env.physical_env import Physical
-from env.chemical_env import Chemical
-from utils.multiprocessing_env import SubprocVecEnv
+
+from cdl.env.physical_env import Physical
+from cdl.env.chemical_env import Chemical
+from cdl.utils.multiprocessing_env import SubprocVecEnv
+from cdl.env.dmc import DMCWrapper
 
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
-
+# get_env_fn
 
 class TrainingParams(AttrDict):
     def __init__(self, training_params_fname="params.json", train=True):
@@ -172,7 +174,12 @@ def update_obs_act_spec(env, params):
 def get_single_env(params, render=False):
     env_params = params.env_params
     env_name = env_params.env_name
-    if "Causal" in env_name:
+
+    if env_name.startswith("dmc_"):
+        domain_name, task_name = env_name.split("_")[1], env_params.task_name
+        return DMCWrapper(domain_name, task_name)
+
+    elif "Causal" in env_name:
         causal_env_params = env_params.causal_env_params
         env = suite.make(env_name=env_params.env_name,
                          robots=causal_env_params.robots,
@@ -216,7 +223,7 @@ def get_env(params, render=False):
     if num_env == 1:
         return get_single_env(params, render)
     else:
-        assert "Causal" in params.env_params.env_name, ""
+        assert "Causal" in params.env_params.env_name, "dmc_" in params.env_params.env_name
         return SubprocVecEnv([get_subproc_env(params) for _ in range(num_env)])
 
 
