@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+from dm_env import specs
 from torch.distributions.categorical import Categorical
 from torch.distributions.normal import Normal
 
@@ -28,7 +28,12 @@ class ActionDistribution:
             std = torch.ones(n_horizon_step, action_dim, dtype=torch.float32, device=device) * std_scale
             self.init_dist = Normal(mu, std)
 
-            action_low, action_high = params.action_spec
+            action_spec = params.action_spec
+            if isinstance(action_spec, specs.BoundedArray):
+                action_low, action_high = action_spec.minimum, action_spec.maximum
+            else:
+                action_low, action_high = action_spec
+
             self.action_low_device = torch.tensor(action_low, dtype=torch.float32, device=device)
             self.action_high_device = torch.tensor(action_high, dtype=torch.float32, device=device)
         else:
@@ -122,7 +127,11 @@ class ModelBased(nn.Module):
         self.init_model()
         self.action_dist = ActionDistribution(params)
         if self.continuous_state:
-            self.action_low, self.action_high = params.action_spec
+            action_spec = params.action_spec
+            if isinstance(action_spec, specs.BoundedArray):
+                self.action_low, self.action_high = action_spec.minimum, action_spec.maximum
+            else:
+                self.action_low, self.action_high = action_spec
             self.action_mean = (self.action_low + self.action_high) / 2
             self.action_scale = (self.action_high - self.action_low) / 2
 
@@ -153,32 +162,30 @@ class ModelBased(nn.Module):
             if continuous_state:
                 feature_dim = len(self.abstraction_feature_idxes)
             else:
-                feature_dim = np.sum(feature_inner_dim[self.abstraction_feature_idxes])
+                feature_dim = int(np.sum(feature_inner_dim[self.abstraction_feature_idxes]))
         else:
             if not continuous_state:
-                feature_dim = np.sum(feature_inner_dim)
+                feature_dim = int(np.sum(feature_inner_dim))
 
-        self.action_dim = action_dim = params.action_dim
+        self.action_dim = action_dim = int(params.action_dim)
 
         self.goal_keys = params.goal_keys
         obs_spec = params.obs_spec
         for key in self.goal_keys:
             assert obs_spec[key].ndim == 1, "Cannot concatenate because goal key {} is not 1D".format(key)
-        goal_dim = np.sum([len(obs_spec[key]) for key in self.goal_keys])
+        goal_dim = int(np.sum([len(obs_spec[key]) for key in self.goal_keys]))
 
         self.goal_inner_dim = None
         if not continuous_state:
             self.goal_inner_dim = []
             if self.goal_keys:
                 self.goal_inner_dim = np.concatenate([params.obs_dims[key] for key in self.goal_keys])
-            goal_dim = np.sum(self.goal_inner_dim)
-
-        goal_dim = goal_dim.astype(np.int32)
+            goal_dim = int(np.sum(self.goal_inner_dim))
 
         in_dim = feature_dim + action_dim + goal_dim
         modules = []
         for out_dim, activation in zip(model_based_params.fc_dims, model_based_params.activations):
-            modules.append(nn.Linear(in_dim, out_dim))
+            modules.append(nn.Linear(int(in_dim), int(out_dim)))
             if activation == "relu":
                 activation = nn.ReLU()
             elif activation == "leaky_relu":
@@ -189,7 +196,7 @@ class ModelBased(nn.Module):
                 raise ValueError("Unknown activation: {}".format(activation))
             modules.append(activation)
             in_dim = out_dim
-        modules.append(nn.Linear(in_dim, 1))
+        modules.append(nn.Linear(int(in_dim), 1))
 
         self.fcs = nn.Sequential(*modules)
 

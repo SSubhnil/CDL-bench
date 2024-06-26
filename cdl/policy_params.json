@@ -1,7 +1,7 @@
 {
     "info": "dmc_walker_walk_mlp",
-    "obs_keys": ["obj0", "obj1", "obj2", "obj3", "obj4"],
-    "goal_keys": ["target_obj0", "target_obj1", "target_obj2", "target_obj3", "target_obj4"],
+    "obs_keys": ["orientations", "height", "velocity"],
+    "goal_keys": [],
     "seed": 0,
     "cuda_id": 0,
     "env_params": {

@@ -102,8 +102,11 @@ def train(params):
 
     # init episode variables
     episode_num = 0
-    obs = env.reset()
-    scripted_policy.reset(obs)
+    raw_obs, obs = env.reset()
+    print("Raw Observation keys after reset:", raw_obs.keys())  # Ensure raw_obs is OrderedDict
+
+    if scripted_policy:
+        scripted_policy.reset(raw_obs)
 
     done = np.zeros(num_env, dtype=bool) if is_vecenv else False
     success = False
@@ -175,22 +178,28 @@ def train(params):
                     action_policy = scripted_policy if is_demo else policy
                     action = action_policy.act(obs)
 
-            next_obs, env_reward, done, info = env.step(action)
+            next_raw_obs, next_obs, env_reward, done, info = env.step(action)
+
+            print("Raw Observation keys after step:", next_raw_obs.keys())
+            for key in next_raw_obs:
+                print(f"next_raw_obs[{key}]: {next_raw_obs[key]}")
+
             if is_task_learning and not is_vecenv:
-                success = success or info["success"]
+                success = success or info.get("success", False)
 
             inference_reward = np.zeros(num_env) if is_vecenv else 0
             episode_reward += env_reward if is_task_learning else inference_reward
             episode_step += 1
 
             # is_train: if the transition is training data or evaluation data for inference_cmi
-            replay_buffer.add(obs, action, env_reward, next_obs, done, is_train, info)
+            replay_buffer.add(raw_obs, action, env_reward, next_raw_obs, done, is_train, info)
 
             # ppo uses its own buffer
             if rl_algo == "hippo" and not is_init_stage:
                 policy.update_trajectory_list(obs, action, done, next_obs, info)
 
             obs = next_obs
+            raw_obs = next_raw_obs
 
         # training and logging
         if is_init_stage:

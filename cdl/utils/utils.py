@@ -5,7 +5,7 @@ import torch
 import shutil
 import random
 import numpy as np
-
+from dm_env import specs
 from robosuite.controllers import load_controller_config
 from robosuite.utils.input_utils import *
 
@@ -109,19 +109,31 @@ def preprocess_obs(obs, params):
     """
     filter unused obs keys, convert to np.float32 / np.uint8, resize images if applicable
     """
-    def to_type(ndarray, type):
-        if ndarray.dtype != type:
-            ndarray = ndarray.astype(type)
-        return ndarray
+
+    def to_type(val, dtype):
+        # Ensure val is a numpy array
+        val = np.asarray(val)
+        return val
 
     obs_spec = getattr(params, "obs_spec", obs)
     new_obs = {}
+
+    # Debug print
+    print("Available observation keys:", obs.keys())
+    print("Expected keys:", params.obs_keys + params.goal_keys)
+
     for k in params.obs_keys + params.goal_keys:
+        if k not in obs:
+            raise KeyError(f"Key {k} not found in observations.")
         val = obs[k]
         val_spec = obs_spec[k]
-        if val_spec.ndim == 1:
+
+        # Convert val to numpy array explicitly
+        val = np.asarray(val)
+
+        if len(val_spec.shape) == 1:
             val = to_type(val, np.float32)
-        if val_spec.ndim == 3:
+        if len(val_spec.shape) == 3:
             num_channel = val.shape[2]
             if num_channel == 1:
                 env_params = params.env_params
@@ -156,7 +168,12 @@ def update_obs_act_spec(env, params):
         params.continuous_state = True
 
     params.action_dim = env.action_dim
-    params.obs_spec = obs_spec = preprocess_obs(env.observation_spec(), params)
+    print("env.action_dim:", params.action_dim)
+    print("env.observation_spec:", env.observation_spec)
+
+    # Adding debug prints
+    print("Keys in observation_spec:", env.observation_spec.keys())
+    params.obs_spec = obs_spec = preprocess_obs(env.observation_spec, params)
 
     if params.continuous_factor:
         params.obs_dims = None

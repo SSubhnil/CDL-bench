@@ -12,22 +12,26 @@ class DMCWrapper:
 
     def reset(self):
         self.time_step = self.env.reset()
-        return self._get_obs()
+        raw_obs = self.time_step.observation
+        return raw_obs, self._get_obs(raw_obs)
 
     def step(self, action):
         self.time_step = self.env.step(action)
-        obs = self._get_obs()
+        raw_obs = self.time_step.observation
+        obs = self._get_obs(raw_obs)
         reward = self.time_step.reward
         done = self.time_step.last()
         info = {}
-        return obs, reward, done, info
+        return raw_obs, obs, reward, done, info
 
-    def _get_obs(self):
-        obs = self.time_step.observation
-        return np.concatenate([np.array(obs[key]) for key in obs])
+    def _get_obs(self, raw_obs):
+        # Ensure this is the correct call for your environment
+        if self.time_step is None:
+            raise ValueError("Environment not reset. Call reset() before _get_obs().")
+        return np.concatenate([np.array(raw_obs[key]).flatten() for key in raw_obs if raw_obs[key] is not None])
 
-    def render(self, mode='human'):
-        return self.env.physics.render()
+    def render(self, mode='rgb_array'):
+        return self.env.physics.render(mode=mode)
 
     def close(self):
         pass

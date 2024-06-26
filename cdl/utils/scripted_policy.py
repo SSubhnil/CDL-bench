@@ -1,7 +1,8 @@
 import random
 import numpy as np
 
-from env.physical_env import Coord
+from cdl.env.physical_env import Coord
+from cdl.env.dmc import DMCWrapper
 
 
 def get_is_demo(step, params):
@@ -339,7 +340,11 @@ class ScriptedPickAndPlace:
 def get_scripted_policy(env, params):
     env_name = params.env_params.env_name
     is_vecenv = params.env_params.num_env > 1
-    if "Causal" in env_name:
+
+    if env_name.startswith("dmc_"):
+        return None
+
+    elif "Causal" in env_name:
         if is_vecenv:
             return ScriptedPickAndPlace(params)
         else:

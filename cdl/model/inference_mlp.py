@@ -21,24 +21,24 @@ class InferenceMLP(Inference):
         # model params
         self.continuous_state = continuous_state = params.continuous_state
 
-        self.action_dim = action_dim = params.action_dim
-        self.feature_dim = feature_dim = self.encoder.feature_dim
+        self.action_dim = action_dim = int(params.action_dim)
+        self.feature_dim = feature_dim = int(self.encoder.feature_dim)
         self.feature_inner_dim = feature_inner_dim = self.encoder.feature_inner_dim
 
         if continuous_state:
             in_dim = feature_dim + action_dim
             final_dim = 2 * feature_dim
         else:
-            in_dim = np.sum(feature_inner_dim) + action_dim
+            in_dim = int(np.sum(feature_inner_dim)) + action_dim
             # if feature_i_inner_dim = 1, it means it is a continuous state variable, so need to output its mean and std
-            final_dim = np.sum(feature_inner_dim) + np.sum(feature_inner_dim == 1)
+            final_dim = int(np.sum(feature_inner_dim)) + int(np.sum(feature_inner_dim == 1))
 
         fcs = []
         for out_dim in mlp_params.fc_dims:
-            fcs.append(nn.Linear(in_dim, out_dim))
+            fcs.append(nn.Linear(int(in_dim), int(out_dim)))
             fcs.append(nn.ReLU())
             in_dim = out_dim
-        fcs.append(nn.Linear(in_dim, final_dim))
+        fcs.append(nn.Linear(int(in_dim), int(final_dim)))
 
         self.fcs = nn.Sequential(*fcs)
 

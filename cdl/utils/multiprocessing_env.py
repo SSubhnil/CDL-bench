@@ -9,7 +9,7 @@ def worker(remote, parent_remote, env_fn_wrapper):
     env = env_fn_wrapper.x()
 
     if isinstance(env, dict) and 'domain_name' in env and 'task_name' in env:
-        env = DMCWrapper(enc['domain_name'], env['task_name'])
+        env = DMCWrapper(env['domain_name'], env['task_name'])
 
     while True:
         cmd, data = remote.recv()

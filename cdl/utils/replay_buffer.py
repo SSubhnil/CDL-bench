@@ -91,6 +91,9 @@ class ReplayBuffer:
     def _add(self, obs, action, reward, done, is_train):
         obs = preprocess_obs(obs, self.params)
         for k in obs.keys():
+            if obs[k] is None:
+                print(f"Warning: obs[{k}] is None, skipping...")
+                continue
             np.copyto(self.obses[k][self.idx], obs[k])
 
         if self.continuous_action and action.dtype != np.float32:
