@@ -28,7 +28,8 @@ from utils.scripted_policy import get_scripted_policy, get_is_demo
 
 from env.chemical_env import Chemical
 
-
+os.environ['MUJOCO_GL'] = 'osmesa'
+# robosuite
 def train(params):
     device = torch.device("cuda:{}".format(params.cuda_id) if torch.cuda.is_available() else "cpu")
     set_seed_everywhere(params.seed)
@@ -38,7 +39,7 @@ def train(params):
     inference_params = params.inference_params
     policy_params = params.policy_params
     cmi_params = inference_params.cmi_params
-
+# preprocess_obs
     # init environment
     render = False
     num_env = params.env_params.num_env
@@ -103,9 +104,8 @@ def train(params):
     # init episode variables
     episode_num = 0
     raw_obs, obs = env.reset()
-    print("Raw Observation keys after reset:", raw_obs.keys())  # Ensure raw_obs is OrderedDict
 
-    if scripted_policy:
+    if scripted_policy is not None:
         scripted_policy.reset(raw_obs)
 
     done = np.zeros(num_env, dtype=bool) if is_vecenv else False
@@ -117,7 +117,8 @@ def train(params):
 
     for step in range(start_step, total_steps):
         is_init_stage = step < training_params.init_steps
-        print("{}/{}, init_stage: {}".format(step + 1, total_steps, is_init_stage))
+        if step % 200 == 0:
+            print("{}/{}, init_stage: {}".format(step + 1, total_steps, is_init_stage))
         loss_details = {"inference": [],
                         "inference_eval": [],
                         "policy": []}
@@ -133,7 +134,6 @@ def train(params):
                     is_demo[i] = get_is_demo(step, params)
                     if rl_algo == "hippo":
                         policy.reset(i)
-                    scripted_policy.reset(obs, i)
 
                     if writer is not None:
                         writer.add_scalar("policy_stat/episode_reward", episode_reward[i], episode_num)
@@ -141,10 +141,9 @@ def train(params):
                     episode_step[i] = 0
                     episode_num += 1
             elif not is_vecenv and done:
-                obs = env.reset()
+                raw_obs, obs = env.reset()
                 if rl_algo == "hippo":
                     policy.reset()
-                scripted_policy.reset(obs)
 
                 if writer is not None:
                     if is_task_learning:
@@ -169,20 +168,16 @@ def train(params):
                 else:
                     action = policy.act_randomly()
             else:
-                if is_vecenv:
+                if is_vecenv: # redundant. N_env is 1.
                     action = policy.act(obs)
                     if is_demo.any():
                         demo_action = scripted_policy.act(obs)
                         action[is_demo] = demo_action[is_demo]
                 else:
-                    action_policy = scripted_policy if is_demo else policy
+                    action_policy = policy
                     action = action_policy.act(obs)
 
             next_raw_obs, next_obs, env_reward, done, info = env.step(action)
-
-            print("Raw Observation keys after step:", next_raw_obs.keys())
-            for key in next_raw_obs:
-                print(f"next_raw_obs[{key}]: {next_raw_obs[key]}")
 
             if is_task_learning and not is_vecenv:
                 success = success or info.get("success", False)

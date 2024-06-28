@@ -430,12 +430,12 @@ class ModelBased(nn.Module):
             action = np.clip(action + action_noise, self.action_low, self.action_high)
 
         if self.continuous_state:
-            eef_pos = obs["robot0_eef_pos"]
-            global_low, global_high = np.array([-0.35, -0.45, 0.82]), np.array([0.35, 0.45, 1.0])
-            controller_scale = 0.05
-            action[:3] = np.clip(action[:3],
-                                 (global_low - eef_pos) / controller_scale,
-                                 (global_high - eef_pos) / controller_scale)
+            # eef_pos = obs["robot0_eef_pos"]
+            # global_low, global_high = np.array([-0.35, -0.45, 0.82]), np.array([0.35, 0.45, 1.0])
+            # controller_scale = 0.05
+            # action[:3] = np.clip(action[:3],
+            #                      (global_low - eef_pos) / controller_scale,
+            #                      (global_high - eef_pos) / controller_scale)
             action = np.clip(action, self.action_low, self.action_high)
 
         return action
@@ -479,8 +479,24 @@ class ModelBased(nn.Module):
         inference = self.inference
 
         with torch.no_grad():
+            # Ensure necessary keys are present
+            required_keys = self.params.obs_keys + self.params.goal_keys
+            for key in required_keys:
+                if key not in obs:
+                    print(f"Warning: Key {key} not found in observation.")
+
+            # Debug: Print observation before preprocessing
+            # print("Observation before preprocessing:", obs)
+
             obs = postprocess_obs(preprocess_obs(obs, self.params))
+
+            # Debug: Print observation after preprocessing
+            # print("Observation after preprocessing:", obs)
+
             obs = {k: torch.from_numpy(v).to(self.device) for k, v in obs.items()}
+
+            # Debug: Print observation after converting to torch tensors
+            # print("Observation as torch tensors:", {k: v.shape for k, v in obs.items()})
             feature = self.encoder(obs)
 
             # assumed the goal is fixed in the episode

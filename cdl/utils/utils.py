@@ -6,14 +6,14 @@ import shutil
 import random
 import numpy as np
 from dm_env import specs
-from robosuite.controllers import load_controller_config
-from robosuite.utils.input_utils import *
+#from robosuite.controllers import load_controller_config
+#from robosuite.utils.input_utils import *
 
 from cdl.env.physical_env import Physical
 from cdl.env.chemical_env import Chemical
 from cdl.utils.multiprocessing_env import SubprocVecEnv
 from cdl.env.dmc import DMCWrapper
-
+from collections import OrderedDict
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -112,21 +112,28 @@ def preprocess_obs(obs, params):
 
     def to_type(val, dtype):
         # Ensure val is a numpy array
-        val = np.asarray(val)
+        val = np.asarray(val, dtype=dtype)
         return val
-
+    # If obs is an OrderedDict, convert it to a regular dictionary
+    if isinstance(obs, OrderedDict):
+        obs = dict(obs)
     obs_spec = getattr(params, "obs_spec", obs)
     new_obs = {}
 
-    # Debug print
-    print("Available observation keys:", obs.keys())
-    print("Expected keys:", params.obs_keys + params.goal_keys)
+    # print("Available observation keys in preprocess_obs:", obs.keys())
+    # print("Expected keys in preprocess_obs:", params.obs_keys + params.goal_keys)
 
+    missing_keys = []
     for k in params.obs_keys + params.goal_keys:
         if k not in obs:
-            raise KeyError(f"Key {k} not found in observations.")
+            missing_keys.append(k)
+            continue
         val = obs[k]
         val_spec = obs_spec[k]
+
+        # Extract the underlying data from the Array object
+        if isinstance(val, specs.Array):
+            val = val.generate_value()
 
         # Convert val to numpy array explicitly
         val = np.asarray(val)
@@ -168,11 +175,8 @@ def update_obs_act_spec(env, params):
         params.continuous_state = True
 
     params.action_dim = env.action_dim
-    print("env.action_dim:", params.action_dim)
-    print("env.observation_spec:", env.observation_spec)
 
     # Adding debug prints
-    print("Keys in observation_spec:", env.observation_spec.keys())
     params.obs_spec = obs_spec = preprocess_obs(env.observation_spec, params)
 
     if params.continuous_factor:
@@ -242,7 +246,7 @@ def get_env(params, render=False):
     else:
         assert "Causal" in params.env_params.env_name, "dmc_" in params.env_params.env_name
         return SubprocVecEnv([get_subproc_env(params) for _ in range(num_env)])
-
+# Raw Observation keys after step
 
 def get_start_step_from_model_loading(params):
     """

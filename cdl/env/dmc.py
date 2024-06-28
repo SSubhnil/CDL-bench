@@ -28,7 +28,15 @@ class DMCWrapper:
         # Ensure this is the correct call for your environment
         if self.time_step is None:
             raise ValueError("Environment not reset. Call reset() before _get_obs().")
-        return np.concatenate([np.array(raw_obs[key]).flatten() for key in raw_obs if raw_obs[key] is not None])
+        # Debug: Print raw observations
+        processed_obs = {}
+        for key, value in raw_obs.items():
+            if np.isscalar(value):
+                processed_obs[key] = np.array([value])  # Convert scalar to single-element array
+            else:
+                processed_obs[key] = np.array(value).flatten()
+
+        return processed_obs
 
     def render(self, mode='rgb_array'):
         return self.env.physics.render(mode=mode)

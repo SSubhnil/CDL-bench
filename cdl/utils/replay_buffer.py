@@ -2,8 +2,8 @@ import os
 import torch
 import numpy as np
 
-from utils.utils import preprocess_obs, postprocess_obs, to_numpy
-from utils.sum_tree import SumTree
+from cdl.utils.utils import preprocess_obs, postprocess_obs, to_numpy
+from cdl.utils.sum_tree import SumTree
 
 
 def take(array, start, end):
@@ -38,13 +38,24 @@ class ReplayBuffer:
         # each transition can be sampled at most max_sample_time times for inference and policy training
         self.max_sample_time = replay_buffer_params.max_sample_time
         self.saving_freq = replay_buffer_params.saving_freq
-
         self.saving_dir = params.replay_buffer_dir
         self.n_inference_pred_step = params.inference_params.n_pred_step
 
         obs_spec = params.obs_spec
+        print("This is obs_spec:", obs_spec)
         action_dim = params.action_dim
-        self.obses = {k: np.empty((capacity, *v.shape), dtype=v.dtype) for k, v in obs_spec.items()}
+        #self.obses = {k: np.zeros((capacity, *v.shape), dtype=np.ndarray) for k, v in obs_spec.items()}
+
+        # Extract shape and dtype from Array objects
+        self.obses = {}
+        for k, v in obs_spec.items():
+            shape = v.shape
+            dtype = v.dtype if len(shape) > 0 else np.float32
+            self.obses[k] = np.zeros((capacity, *shape), dtype=dtype)
+
+        for k, v in self.obses.items():
+            print(f"Initialized self.obses[{k}] with shape {v.shape} and dtype {v.dtype}")
+
         if self.continuous_action:
             self.actions = np.empty((capacity, action_dim), dtype=np.float32)
         else:
@@ -94,7 +105,16 @@ class ReplayBuffer:
             if obs[k] is None:
                 print(f"Warning: obs[{k}] is None, skipping...")
                 continue
-            np.copyto(self.obses[k][self.idx], obs[k])
+
+            # Check if the value is a scalar and reshape it
+            if np.isscalar(obs[k]):
+                obs[k] = np.array([obs[k]], dtype=self.obses[k].dtype)
+
+            # Ensure the destination array has the correct shape
+            if self.obses[k][self.idx].shape != obs[k].shape:
+                obs[k] = np.reshape(obs[k], self.obses[k][self.idx].shape)
+            #np.copyto(self.obses[k][self.idx], obs[k])
+            self.obses[k][self.idx] = obs[k]  # Use assignment instead of np.copyto
 
         if self.continuous_action and action.dtype != np.float32:
             action = action.astype(np.float32)

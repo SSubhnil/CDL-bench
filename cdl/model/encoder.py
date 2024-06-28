@@ -35,6 +35,7 @@ class IdentityEncoder(nn.Module):
                 obs = {k: torch.randn_like(v) * test_scale if "marker" in k else v
                        for k, v in obs.items()}
             obs = torch.cat([obs[k] for k in self.keys], dim=-1)
+            # Debug: Print concatenated observation shape
             return obs
         else:
             obs = [obs_k_i
