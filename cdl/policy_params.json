@@ -82,7 +82,7 @@
     },
     "inference_params": {
         "n_pred_step": 2,
-        "batch_size": 64,
+        "batch_size": 1024,
         "lr": 1e-4,
         "train_prop": 0.9,
         "residual": true,
@@ -90,14 +90,14 @@
         "log_std_max": 0,
         "grad_clip_norm": 20000,
         "cmi_params": {
-            "feature_fc_dims": [64, 64],
-            "generative_fc_dims": [64, 64],
+            "feature_fc_dims": [512, 512],
+            "generative_fc_dims": [512, 512],
             "causal_pred_reward_weight": 0.0,
             "pred_diff_reward_weight": 1.0,
             "eval_tau": 0.999,
             "eval_freq": 10,
             "eval_steps": 1,
-            "eval_batch_size": 32,
+            "eval_batch_size": 128,
             "CMI_threshold": 0.02
         },
         "nps_params": {
@@ -135,12 +135,12 @@
         }
     },
     "policy_params": {
-        "batch_size": 32,
+        "batch_size": 1024,
         "lr": 3e-4,
         "n_reward_step": 1,
         "discount": 0.995,
         "ppo_params": {
-            "fc_dims": [128, 128],
+            "fc_dims": [1024, 1024],
             "ratio_clip": 0.1,
             "lambda_entropy": 0.20,
             "lambda_gae_adv": 0.98,
@@ -148,7 +148,7 @@
             "log_std_max": 2,
             "if_use_gae": true,
             "if_use_global_action_std": true,
-            "batch_size": 32,
+            "batch_size": 1024,
             "target_step": 250
         },
         "hippo_params": {
@@ -191,7 +191,7 @@
         "model_based_params": {
             "use_abstraction_feature": false,
             "use_current_state": true,
-            "fc_dims": [32, 32],
+            "fc_dims": [1024, 1024],
             "activations": ["relu", "relu"],
             "planner_type": "cem",
             "std_scale": 1.0,
