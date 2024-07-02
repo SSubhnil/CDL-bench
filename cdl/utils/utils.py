@@ -119,7 +119,7 @@ def preprocess_obs(obs, params):
         obs = dict(obs)
     obs_spec = getattr(params, "obs_spec", obs)
     new_obs = {}
-
+# This is obs_spec
     # print("Available observation keys in preprocess_obs:", obs.keys())
     # print("Expected keys in preprocess_obs:", params.obs_keys + params.goal_keys)
 
@@ -244,7 +244,7 @@ def get_env(params, render=False):
     if num_env == 1:
         return get_single_env(params, render)
     else:
-        assert "Causal" in params.env_params.env_name, "dmc_" in params.env_params.env_name
+        assert "dmc_" in params.env_params.env_name #"Causal" in params.env_params.env_name,
         return SubprocVecEnv([get_subproc_env(params) for _ in range(num_env)])
 # Raw Observation keys after step
 

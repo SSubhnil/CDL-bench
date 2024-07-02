@@ -82,11 +82,13 @@ class ReplayBuffer:
             self.temp_buffer = [[] for _ in range(self.num_env)]
 
     def add(self, obs, action, reward, next_obs, done, is_train, info):
+        print(f"Adding to buffer. Current idx: {self.idx}, full: {self.full}")
         if self.is_vecenv:
             for i in range(self.num_env):
                 obs_i = {key: val[i] for key, val in obs.items()}
                 self.temp_buffer[i].append([obs_i, action[i], reward[i], done[i], is_train[i]])
                 if done[i]:
+                    print(f"Done for environment {i}")
                     for obs_, action_, reward_, done_, is_train_ in self.temp_buffer[i]:
                         self._add(obs_, action_, reward_, done_, is_train_)
                     final_obs = info[i]["obs"]
@@ -98,8 +100,10 @@ class ReplayBuffer:
             if done:
                 # use done = -1 as a special indicator that the added obs is the last obs in the episode
                 self._add(next_obs, action, 0, -1, is_train)
+        print("Add operation completed.")
 
     def _add(self, obs, action, reward, done, is_train):
+        print(f"_add method called with idx: {self.idx}")
         obs = preprocess_obs(obs, self.params)
         for k in obs.keys():
             if obs[k] is None:
@@ -132,47 +136,62 @@ class ReplayBuffer:
         self.idx = (self.idx + 1) % self.capacity
         self.full = self.full or self.idx == 0
 
+        print(f"_add method completed. New idx: {self.idx}, full: {self.full}")
+
         if (self.saving_freq > 0) and (self.idx % self.saving_freq == 0):
             self.save(self.saving_dir)
 
     def valid_idx(self, idx, n_step, type, use_part="all"):
+        # print(f"Checking valid idx: {idx}, n_step: {n_step}, type: {type}, use_part: {use_part}")
         if use_part != "all":
             is_train = self.is_trains[idx]
             if use_part == "train" and not is_train:
+                # print(f"Idx {idx} is not for training use.")
                 return False
             if use_part == "eval" and is_train:
+                # print(f"Idx {idx} is not for evaluation use.")
                 return False
 
         if type == "policy":
             if self.policy_sample_times[idx] >= self.max_sample_time:
+                # print(f"Idx {idx} exceeded policy sample time.")
                 return False
         elif type == "inference":
             if self.inference_sample_times[idx] >= self.max_sample_time:
+                # print(f"Idx {idx} exceeded inference sample time.")
                 return False
         else:
             if self.model_based_sample_times[idx] >= self.max_sample_time:
+                # print(f"Idx {idx} exceeded model based sample time.")
                 return False
 
         not_at_episode_end = (take(self.dones, idx, idx + n_step) != -1).all()
         not_newly_added = (idx >= self.idx) or ((idx + n_step) % self.capacity < self.idx)
+        # print(f"not_at_episode_end: {not_at_episode_end}, not_newly_added: {not_newly_added}")
         return not_at_episode_end and not_newly_added
 
     def sample_idx(self, batch_size, n_step, type, use_part="all"):
+        # print(f"Sampling idxes. Batch size: {batch_size}, n_step: {n_step}, type: {type}, use_part: {use_part}")
         idxes = []
-        for _ in range(batch_size):
-            while True:
-                idx = np.random.randint(self.capacity if self.full else (self.idx - n_step))
-                if self.valid_idx(idx, n_step, type, use_part):
-                    idxes.append(idx)
+        max_attempts = 10000
+        attempts = 0
+        while len(idxes) < batch_size and attempts < max_attempts:
+            idx = np.random.randint(self.capacity if self.full else (self.idx - n_step))
+            # print(f"Attempting to sample idx: {idx}")
+            if self.valid_idx(idx, n_step, type, use_part):
+                idxes.append(idx)
+                if type == "inference" and use_part != "eval":
+                    self.inference_sample_times[idx] += 1
+                elif type == "policy":
+                    self.policy_sample_times[idx] += 1
+                else:
+                    self.model_based_sample_times[idx] += 1
+            attempts += 1
 
-                    if type == "inference" and use_part != "eval":
-                        self.inference_sample_times[idx] += 1
-                    elif type == "policy":
-                        self.policy_sample_times[idx] += 1
-                    else:
-                        self.model_based_sample_times[idx] += 1
+        # if attempts >= max_attempts:
+            # print(f"Max attempts ({max_attempts}) reached. Valid idxes found: {len(idxes)}")
 
-                    break
+        # print(f"Sampled idxes: {idxes}")
         return np.array(idxes)
 
     def construct_transition(self, idxes, n_step, type):
@@ -266,6 +285,11 @@ class ReplayBuffer:
 
     def __len__(self):
         return self.capacity if self.full else (self.idx + 1)
+
+    def analyze_is_train_distribution(self):
+        train_count = np.sum(self.is_trains[:self.idx])
+        eval_count = self.idx - train_count
+        print(f"Train samples: {train_count}, Eval samples: {eval_count}")
 
 
 class PrioritizedReplayBuffer(ReplayBuffer):

@@ -114,17 +114,18 @@ def train(params):
     episode_step = np.zeros(num_env) if is_vecenv else 0
     is_train = (np.random.rand(num_env) if is_vecenv else np.random.rand()) < train_prop
     is_demo = np.array([get_is_demo(0, params) for _ in range(num_env)]) if is_vecenv else get_is_demo(0, params)
-
+    replay_buffer.analyze_is_train_distribution()
     for step in range(start_step, total_steps):
         is_init_stage = step < training_params.init_steps
-        if step % 200 == 0:
-            print("{}/{}, init_stage: {}".format(step + 1, total_steps, is_init_stage))
+        #if step % 200 == 0:
+        print("{}/{}, init_stage: {}".format(step + 1, total_steps, is_init_stage))
         loss_details = {"inference": [],
                         "inference_eval": [],
                         "policy": []}
 
         # env interaction and transition saving
         if collect_env_step:
+            print("Collecting environment step")
             # reset in the beginning of an episode
             if is_vecenv and done.any():
                 for i, done_ in enumerate(done):
@@ -159,6 +160,7 @@ def train(params):
                 success = False
                 episode_num += 1
 
+            print("After environment reset checks")
             # get action
             inference.eval()
             policy.eval()
@@ -178,6 +180,7 @@ def train(params):
                     action = action_policy.act(obs)
 
             next_raw_obs, next_obs, env_reward, done, info = env.step(action)
+            print(f"Action taken: {action}, Reward: {env_reward}, Done: {done}")
 
             if is_task_learning and not is_vecenv:
                 success = success or info.get("success", False)
@@ -195,10 +198,13 @@ def train(params):
 
             obs = next_obs
             raw_obs = next_raw_obs
+            # print(f"Environment step completed: {step}")
 
+            replay_buffer.analyze_is_train_distribution()
         # training and logging
         if is_init_stage:
             continue
+
 
         if inference_gradient_steps > 0:
             inference.train()
