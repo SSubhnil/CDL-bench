@@ -2,7 +2,7 @@
 
 import numpy as np
 from multiprocessing import Process, Pipe
-from cdl.env.dmc import DMCWrapper
+from env.dmc import DMCWrapper
 
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()

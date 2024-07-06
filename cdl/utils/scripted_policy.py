@@ -1,8 +1,8 @@
 import random
 import numpy as np
 
-from cdl.env.physical_env import Coord
-from cdl.env.dmc import DMCWrapper
+from env.physical_env import Coord
+from env.dmc import DMCWrapper
 
 
 def get_is_demo(step, params):

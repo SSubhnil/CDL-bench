@@ -8,8 +8,8 @@ from dm_env import specs
 from torch.distributions.categorical import Categorical
 from torch.distributions.normal import Normal
 
-from cdl.utils.utils import to_numpy, preprocess_obs, postprocess_obs
-from cdl.env.dmc import DMCWrapper
+from utils.utils import to_numpy, preprocess_obs, postprocess_obs
+from env.dmc import DMCWrapper
 
 class ActionDistribution:
     def __init__(self, params):

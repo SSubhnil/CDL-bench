@@ -9,10 +9,10 @@ from dm_env import specs
 #from robosuite.controllers import load_controller_config
 #from robosuite.utils.input_utils import *
 
-from cdl.env.physical_env import Physical
-from cdl.env.chemical_env import Chemical
-from cdl.utils.multiprocessing_env import SubprocVecEnv
-from cdl.env.dmc import DMCWrapper
+from env.physical_env import Physical
+from env.chemical_env import Chemical
+from utils.multiprocessing_env import SubprocVecEnv
+from env.dmc import DMCWrapper
 from collections import OrderedDict
 
 class AttrDict(dict):
@@ -244,7 +244,7 @@ def get_env(params, render=False):
     if num_env == 1:
         return get_single_env(params, render)
     else:
-        assert "Causal" in params.env_params.env_name, "dmc_" in params.env_params.env_name
+        assert "dmc_" in params.env_params.env_name
         return SubprocVecEnv([get_subproc_env(params) for _ in range(num_env)])
 # Raw Observation keys after step
 

@@ -11,8 +11,8 @@ import skimage
 import matplotlib
 import matplotlib.pyplot as plt
 
-from cdl.env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
-from cdl.env.drawing import render_cubes, get_colors_and_weights
+from env.drawing import diamond, square, triangle, cross, pentagon, parallelogram, scalene_triangle
+from env.drawing import render_cubes, get_colors_and_weights
 
 
 @dataclass

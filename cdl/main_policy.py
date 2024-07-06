@@ -1,6 +1,13 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Change the working directory to the script's directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
+# Add the necessary paths for importing modules
+sys.path.append(os.path.join(script_dir, 'utils'))
+sys.path.append(os.path.join(script_dir, 'env'))
+sys.path.append(os.path.join(script_dir, 'model'))
 
 import numpy as np
 
